@@ -2,152 +2,74 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Curvas de Supervivencia: Carábidos (Agonum spp.)</title>
+    <title>Grafico de Supervivencia</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f4; padding: 15px; margin: 0; box-sizing: border-box; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; text-align: center; }
-        th, td { border: 1px solid #ccc; padding: 6px; }
-        th { background: #e8f5e9; color: #2e7d32; }
-        canvas { background: #fff; border-bottom: 2px solid #333; border-left: 2px solid #333; display: block; width: 100%; height: auto; max-width: 740px; margin: 15px auto; }
-        .info-text { font-size: 0.85em; color: #444; background: #f9f9f9; padding: 12px; border-radius: 6px; margin-top: 10px; }
+        body { font-family: sans-serif; background: #f4f7f4; padding: 20px; }
+        .container { max-width: 850px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; background: #e8f5e9; padding: 15px; border-radius: 8px; }
+        input { padding: 8px; width: 80px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 8px 15px; background: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        canvas { background: #fff; border-bottom: 2px solid #333; border-left: 2px solid #333; display: block; width: 100%; height: auto; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h3 style="margin-top:0; text-align:center;">Práctica: Supervivencia de Carábidos según Temperatura</h3>
-    <p style="font-size: 13px; text-align: center; color: #555;">Datos experimentales de exposición a diferentes temperaturas para tres especies del género <i>Agonum</i>.</p>
-
-    <!-- TABLA DE DATOS -->
-    <table>
-        <thead>
-            <tr>
-                <th colspan="2">Agonum assimile</th>
-                <th colspan="2">Agonum dorsale</th>
-                <th colspan="2">Agonum mulleri</th>
-            </tr>
-            <tr>
-                <th>Temp (°C)</th><th>% Sup.</th>
-                <th>Temp (°C)</th><th>% Sup.</th>
-                <th>Temp (°C)</th><th>% Sup.</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr><td>12</td><td>9</td><td>14</td><td>12</td><td>20</td><td>7</td></tr>
-            <tr><td>14</td><td>22</td><td>16</td><td>8</td><td>22</td><td>8</td></tr>
-            <tr><td>16</td><td>6</td><td>18</td><td>8</td><td>24</td><td>12</td></tr>
-            <tr><td>18</td><td>8</td><td>20</td><td>6</td><td>26</td><td>5</td></tr>
-            <tr><td>20</td><td>6</td><td>22</td><td>15</td><td>28</td><td>5</td></tr>
-            <tr><td>22</td><td>5</td><td>24</td><td>10</td><td>30</td><td>7</td></tr>
-            <tr><td>24</td><td>4</td><td>26</td><td>12</td><td>32</td><td>10</td></tr>
-            <tr><td>26</td><td>3</td><td>28</td><td>6</td><td>34</td><td>25</td></tr>
-            <tr><td>28</td><td>2</td><td>30</td><td>12</td><td>36</td><td>7</td></tr>
-            <tr><td>30</td><td>1</td><td>32</td><td>2</td><td>38</td><td>8</td></tr>
-        </tbody>
-    </table>
-
-    <!-- GRÁFICO GENERADO POR JAVASCRIPT -->
-    <canvas id="graficoCarabidos" width="740" height="320"></canvas>
-    
-    <div class="info-text">
-        <b>Análisis didáctico:</b> Cada especie muestra un pico de supervivencia (óptimo térmico) desplazado a lo largo del eje horizontal, reflejando sus distintas adaptaciones ecológicas al microhábitat.
+    <h3>Carga de datos: Supervivencia vs Temperatura</h3>
+    <div class="input-group">
+        <input type="number" id="temp" placeholder="Temp °C">
+        <input type="number" id="sup" placeholder="% Sup">
+        <select id="especie">
+            <option value="assimile">A. assimile</option>
+            <option value="dorsale">A. dorsale</option>
+            <option value="mulleri">A. mulleri</option>
+        </select>
+        <button onclick="agregarDato()">Agregar Dato</button>
+        <button onclick="limpiar()" style="background:#c62828;">Limpiar</button>
     </div>
+
+    <canvas id="grafico" width="800" height="400"></canvas>
 </div>
 
 <script>
-    function dibujarGrafico() {
-        const canvas = document.getElementById('graficoCarabidos');
-        const ctx = canvas.getContext('2d');
+    let datos = { assimile: [], dorsale: [], mulleri: [] };
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Datos de las especies (Temp, Supervivencia)
-        const assimile = [[12,9],[14,22],[16,6],[18,8],[20,6],[22,5],[24,4],[26,3],[28,2],[30,1]];
-        const dorsale = [[14,12],[16,8],[18,8],[20,6],[22,15],[24,10],[26,12],[28,6],[30,12],[32,2]];
-        const mulleri = [[20,7],[22,8],[24,12],[26,5],[28,5],[30,7],[32,10],[34,25],[36,7],[38,8]];
-
-        // Ejes y Escalas (Min Temp: 10, Max Temp: 40 | Min Sup: 0, Max Sup: 25)
-        const minX = 10, maxX = 40;
-        const minY = 0, maxY = 25;
-        const padding = 50;
-        const w = canvas.width - padding * 2;
-        const h = canvas.height - padding * 2;
-
-        function getX(t) { return padding + ((t - minX) / (maxX - minX)) * w; }
-        function getY(s) { return canvas.height - padding - ((s - minY) / (maxY - minY)) * h; }
-
-        // Dibujar Cuadrícula y Ejes
-        ctx.strokeStyle = "#e0e0e0"; ctx.lineWidth = 1;
-        for (let t = 10; t <= 40; t += 5) {
-            let x = getX(t);
-            ctx.beginPath(); ctx.moveTo(x, padding); ctx.lineTo(x, canvas.height - padding); ctx.stroke();
-            ctx.fillStyle = "#666"; ctx.font = "10px sans-serif";
-            ctx.fillText(t + "°C", x - 8, canvas.height - padding + 15);
+    function agregarDato() {
+        let t = parseFloat(document.getElementById('temp').value);
+        let s = parseFloat(document.getElementById('sup').value);
+        let e = document.getElementById('especie').value;
+        if (!isNaN(t) && !isNaN(s)) {
+            datos[e].push({x: t, y: s});
+            datos[e].sort((a,b) => a.x - b.x);
+            dibujar();
         }
-        for (let s = 0; s <= 25; s += 5) {
-            let y = getY(s);
-            ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(canvas.width - padding, y); ctx.stroke();
-            ctx.fillStyle = "#666"; ctx.font = "10px sans-serif";
-            ctx.fillText(s + "%", padding - 30, y + 4);
-        }
-
-        // Ejes principales
-        ctx.strokeStyle = "#333"; ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(padding, canvas.height - padding); ctx.lineTo(canvas.width - padding, canvas.height - padding);
-        ctx.moveTo(padding, padding); ctx.lineTo(padding, canvas.height - padding);
-        ctx.stroke();
-
-        ctx.fillStyle = "#333"; ctx.font = "11px sans-serif";
-        ctx.fillText("Temperatura (°C) →", canvas.width / 2 - 40, canvas.height - 10);
-        ctx.save();
-        ctx.translate(15, canvas.height / 2 + 20);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillText("Supervivencia (%)", 0, 0);
-        ctx.restore();
-
-        // Función para trazar líneas de cada especie
-        function trazarCurva(data, color, nombre) {
-            ctx.strokeStyle = color; ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            data.forEach((pt, idx) => {
-                let x = getX(pt[0]);
-                let y = getY(pt[1]);
-                if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-
-            // Puntos
-            data.forEach(pt => {
-                let x = getX(pt[0]);
-                let y = getY(pt[1]);
-                ctx.fillStyle = color;
-                ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
-            });
-        }
-
-        trazarCurva(assimile, "#1976d2", "A. assimile");
-        trazarCurva(dorsale, "#388e3c", "A. dorsale");
-        trazarCurva(mulleri, "#d32f2f", "A. mulleri");
-
-        // Leyenda superior del gráfico
-        let lx = padding + 20, ly = padding - 15;
-        const leyendas = [
-            { nombre: "A. assimile", color: "#1976d2" },
-            { nombre: "A. dorsale", color: "#388e3c" },
-            { nombre: "A. mulleri", color: "#d32f2f" }
-        ];
-        leyendas.forEach(l => {
-            ctx.fillStyle = l.color;
-            ctx.fillRect(lx, ly, 12, 12);
-            ctx.fillStyle = "#333"; ctx.font = "11px sans-serif";
-            ctx.fillText(l.nombre, lx + 18, ly + 10);
-            lx += 110;
-        });
     }
 
-    window.onload = dibujarGrafico;
+    function limpiar() { datos = { assimile: [], dorsale: [], mulleri: [] }; dibujar(); }
+
+    function dibujar() {
+        const canvas = document.getElementById('grafico');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Dibujar ejes simples (simplificado para el ejemplo)
+        ctx.strokeStyle = "#333"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(50, 50); ctx.lineTo(50, 350); ctx.stroke();
+
+        let colores = { assimile: "#1976d2", dorsale: "#388e3c", mulleri: "#d32f2f" };
+
+        for (let esp in datos) {
+            ctx.strokeStyle = colores[esp]; ctx.lineWidth = 3;
+            ctx.beginPath();
+            datos[esp].forEach((p, i) => {
+                let px = 50 + (p.x - 10) * 20;
+                let py = 350 - p.y * 10;
+                if(i==0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            });
+            ctx.stroke();
+        }
+    }
 </script>
 </body>
 </html>
