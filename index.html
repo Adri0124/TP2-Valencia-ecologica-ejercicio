@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Laboratorio de Ecología: Registro de Datos</title>
+    <title>Laboratorio: Registro y Gráfico</title>
     <style>
         body { font-family: sans-serif; background: #f4f7f4; padding: 20px; }
         .container { max-width: 850px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -12,13 +12,13 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
         th { background: #f1f8e9; }
-        canvas { background: #fff; border-bottom: 2px solid #333; border-left: 2px solid #333; display: block; width: 100%; height: auto; margin-top: 20px; }
+        canvas { background: #fff; border: 1px solid #ddd; display: block; width: 100%; height: auto; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h3>Carga de datos: Supervivencia de Carábidos</h3>
+    <h3>Registro de Supervivencia: Datos y Curva</h3>
     <div class="input-group">
         <label>Temp (°C):</label>
         <input type="number" id="temp" value="12">
@@ -30,14 +30,11 @@
             <option value="mulleri">A. mulleri</option>
         </select>
         <button onclick="agregarDato()">Graficar dato</button>
-        <button onclick="limpiar()" style="background:#c62828;">Limpiar Tabla</button>
+        <button onclick="limpiar()" style="background:#c62828;">Limpiar Todo</button>
     </div>
 
-    <!-- Tabla que se llenará dinámicamente -->
     <table id="tablaDatos">
-        <thead>
-            <tr><th>Especie</th><th>Temp (°C)</th><th>% Sup</th></tr>
-        </thead>
+        <thead><tr><th>Especie</th><th>Temperatura (°C)</th><th>% Supervivencia</th></tr></thead>
         <tbody></tbody>
     </table>
 
@@ -46,6 +43,7 @@
 
 <script>
     let datos = { assimile: [], dorsale: [], mulleri: [] };
+    let colores = { assimile: "#1976d2", dorsale: "#388e3c", mulleri: "#d32f2f" };
 
     function agregarDato() {
         let t = parseFloat(document.getElementById('temp').value);
@@ -54,23 +52,31 @@
         
         if (!isNaN(t) && !isNaN(s)) {
             datos[e].push({x: t, y: s});
-            datos[e].sort((a,b) => a.x - b.x);
-            
-            // Agregar fila a la tabla
-            let tabla = document.getElementById('tablaDatos').getElementsByTagName('tbody')[0];
-            let fila = tabla.insertRow();
-            fila.insertCell(0).innerText = e;
-            fila.insertCell(1).innerText = t;
-            fila.insertCell(2).innerText = s;
-            
-            dibujar();
+            actualizarTodo();
         }
+    }
+
+    function actualizarTodo() {
+        // Ordenar datos por temperatura para que el gráfico no se cruce
+        for(let esp in datos) { datos[esp].sort((a,b) => a.x - b.x); }
+        
+        // Actualizar Tabla
+        let tbody = document.getElementById('tablaDatos').getElementsByTagName('tbody')[0];
+        tbody.innerHTML = "";
+        for(let esp in datos) {
+            datos[esp].forEach(p => {
+                let fila = tbody.insertRow();
+                fila.insertCell(0).innerText = esp.charAt(0).toUpperCase() + esp.slice(1);
+                fila.insertCell(1).innerText = p.x;
+                fila.insertCell(2).innerText = p.y;
+            });
+        }
+        dibujar();
     }
 
     function limpiar() { 
         datos = { assimile: [], dorsale: [], mulleri: [] }; 
-        document.getElementById('tablaDatos').getElementsByTagName('tbody')[0].innerHTML = "";
-        dibujar(); 
+        actualizarTodo(); 
     }
 
     function dibujar() {
@@ -78,20 +84,17 @@
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Ejes simples
+        // Ejes
         ctx.strokeStyle = "#333"; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(50, 50); ctx.lineTo(50, 350); ctx.stroke();
         
-        ctx.fillStyle = "#333";
-        ctx.fillText("Temperatura (°C) →", 380, 380);
-        ctx.save(); ctx.translate(20, 200); ctx.rotate(-Math.PI/2);
-        ctx.fillText("Supervivencia (%)", 0, 0); ctx.restore();
-
-        let colores = { assimile: "#1976d2", dorsale: "#388e3c", mulleri: "#d32f2f" };
-
+        // Dibujar curvas
         for (let esp in datos) {
-            ctx.strokeStyle = colores[esp]; ctx.lineWidth = 3;
+            ctx.strokeStyle = colores[esp];
+            ctx.fillStyle = colores[esp];
+            ctx.lineWidth = 3;
+            
             ctx.beginPath();
             datos[esp].forEach((p, i) => {
                 let px = 50 + (p.x - 10) * 20;
@@ -99,6 +102,13 @@
                 if(i==0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
             });
             ctx.stroke();
+
+            // Puntos
+            datos[esp].forEach(p => {
+                let px = 50 + (p.x - 10) * 20;
+                let py = 350 - p.y * 10;
+                ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fill();
+            });
         }
     }
 </script>
