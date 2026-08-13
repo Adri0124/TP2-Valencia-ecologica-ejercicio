@@ -2,20 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Laboratorio: Carga de Supervivencia</title>
+    <title>Laboratorio de Ecología: Registro de Datos</title>
     <style>
         body { font-family: sans-serif; background: #f4f7f4; padding: 20px; }
         .container { max-width: 850px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; background: #e8f5e9; padding: 15px; border-radius: 8px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; background: #e8f5e9; padding: 15px; border-radius: 8px; flex-wrap: wrap; }
         input { padding: 8px; width: 80px; }
         button { padding: 8px 15px; background: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background: #f1f8e9; }
         canvas { background: #fff; border-bottom: 2px solid #333; border-left: 2px solid #333; display: block; width: 100%; height: auto; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h3>Carga de datos: Porcentaje de Supervivencia</h3>
+    <h3>Carga de datos: Supervivencia de Carábidos</h3>
     <div class="input-group">
         <label>Temp (°C):</label>
         <input type="number" id="temp" value="12">
@@ -27,8 +30,16 @@
             <option value="mulleri">A. mulleri</option>
         </select>
         <button onclick="agregarDato()">Graficar dato</button>
-        <button onclick="limpiar()" style="background:#c62828;">Limpiar</button>
+        <button onclick="limpiar()" style="background:#c62828;">Limpiar Tabla</button>
     </div>
+
+    <!-- Tabla que se llenará dinámicamente -->
+    <table id="tablaDatos">
+        <thead>
+            <tr><th>Especie</th><th>Temp (°C)</th><th>% Sup</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
     <canvas id="grafico" width="800" height="400"></canvas>
 </div>
@@ -40,28 +51,42 @@
         let t = parseFloat(document.getElementById('temp').value);
         let s = parseFloat(document.getElementById('sup').value);
         let e = document.getElementById('especie').value;
+        
         if (!isNaN(t) && !isNaN(s)) {
             datos[e].push({x: t, y: s});
             datos[e].sort((a,b) => a.x - b.x);
+            
+            // Agregar fila a la tabla
+            let tabla = document.getElementById('tablaDatos').getElementsByTagName('tbody')[0];
+            let fila = tabla.insertRow();
+            fila.insertCell(0).innerText = e;
+            fila.insertCell(1).innerText = t;
+            fila.insertCell(2).innerText = s;
+            
             dibujar();
         }
     }
 
-    function limpiar() { datos = { assimile: [], dorsale: [], mulleri: [] }; dibujar(); }
+    function limpiar() { 
+        datos = { assimile: [], dorsale: [], mulleri: [] }; 
+        document.getElementById('tablaDatos').getElementsByTagName('tbody')[0].innerHTML = "";
+        dibujar(); 
+    }
 
     function dibujar() {
         const canvas = document.getElementById('grafico');
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Ejes
+        // Ejes simples
         ctx.strokeStyle = "#333"; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(750, 350); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(50, 50); ctx.lineTo(50, 350); ctx.stroke();
         
         ctx.fillStyle = "#333";
-        ctx.fillText("Temp (°C)", 750, 370);
-        ctx.fillText("% Sup", 10, 40);
+        ctx.fillText("Temperatura (°C) →", 380, 380);
+        ctx.save(); ctx.translate(20, 200); ctx.rotate(-Math.PI/2);
+        ctx.fillText("Supervivencia (%)", 0, 0); ctx.restore();
 
         let colores = { assimile: "#1976d2", dorsale: "#388e3c", mulleri: "#d32f2f" };
 
@@ -76,7 +101,6 @@
             ctx.stroke();
         }
     }
-    dibujar();
 </script>
 </body>
 </html>
